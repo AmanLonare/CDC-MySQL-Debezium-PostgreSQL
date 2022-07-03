@@ -24,30 +24,43 @@ The official page of [Debezium] says:
 Clone the repository
 
 ```sh
-$ git clone https://github.com/AmanLonare/Debezium-CDC-MySQL.git
+$ git clone https://github.com/AmanLonare/CDC-MySQL-Debezium-PostgreSQL.git
 ```
 Change the directory to "Debezium-CDC-MySQL"
 
 ```sh
-$ cd Debezium-CDC-MySQL/
+$ cd CDC-MySQL-Debezium-PostgreSQL/
 ```
 The folder consist of a docker compose file and configuration file for configuring Debezium MySQL source connector to Kafka Connect. Run the docker compose file with the following command to spin up all the necssary components for running the project
 
 ```sh
-$ docker-compose -f docker-compose-mysql-dbz.yml up -d
+$ docker-compose -f docker-compose-mysql-dbz-postgres.yml up -d
 ```
 
 This will start up five containers as show below
 
 ```sh
-$ docker ps
-CONTAINER ID   IMAGE                                    COMMAND                  CREATED         STATUS         PORTS                               NAMES
-cf400fa8b78b   quay.io/debezium/connect:1.9             "/docker-entrypoint.…"   3 minutes ago   Up 3 minutes   0.0.0.0:8083->8083/tcp, 9092/tcp    debezium-cdc-mysql_connect_1
-5ca97dc5c012   confluentinc/cp-schema-registry:5.5.3    "/etc/confluent/dock…"   3 minutes ago   Up 3 minutes   0.0.0.0:8081->8081/tcp              debezium-cdc-mysql_schema-registry_1
-110a7e87c297   confluentinc/cp-enterprise-kafka:5.5.3   "/etc/confluent/dock…"   3 minutes ago   Up 3 minutes   0.0.0.0:9092->9092/tcp              debezium-cdc-mysql_kafka_1
-40c0f32f90b8   confluentinc/cp-zookeeper:5.5.3          "/etc/confluent/dock…"   3 minutes ago   Up 3 minutes   2181/tcp, 2888/tcp, 3888/tcp        debezium-cdc-mysql_zookeeper_1
-0fe701a833c8   quay.io/debezium/example-mysql:1.9       "docker-entrypoint.s…"   3 minutes ago   Up 3 minutes   0.0.0.0:3306->3306/tcp, 33060/tcp   debezium-cdc-mysql_mysql_1
+$ docker ps 
+
+CONTAINER ID   IMAGE                                COMMAND                  CREATED         STATUS         PORTS
+                                                               NAMES
+a226942400b5   debezium/connect-jdbc:1.9            "/docker-entrypoint.…"   6 minutes ago   Up 6 minutes   0.0.0.0:50
+05->5005/tcp, 0.0.0.0:8083->8083/tcp, 9092/tcp                 cdc-mysql-debezium-postgresql_connect_1
+00b256eb8763   quay.io/debezium/kafka:1.9           "/docker-entrypoint.…"   6 minutes ago   Up 6 minutes   0.0.0.0:90
+92->9092/tcp                                                   cdc-mysql-debezium-postgresql_kafka_1
+6c37ba47fdc3   quay.io/debezium/postgres:9.6        "docker-entrypoint.s…"   6 minutes ago   Up 6 minutes   0.0.0.0:54
+32->5432/tcp                                                   cdc-mysql-debezium-postgresql_postgres_1
+f5be0502d4a4   quay.io/debezium/zookeeper:1.9       "/docker-entrypoint.…"   6 minutes ago   Up 6 minutes   0.0.0.0:21
+81->2181/tcp, 0.0.0.0:2888->2888/tcp, 0.0.0.0:3888->3888/tcp   cdc-mysql-debezium-postgresql_zookeeper_1
+b4bd2bbeabda   quay.io/debezium/example-mysql:1.9   "docker-entrypoint.s…"   6 minutes ago   Up 6 minutes   0.0.0.0:33
+06->3306/tcp, 33060/tcp                                        cdc-mysql-debezium-postgresql_mysql_1
+
 ```
+We have an enriched Kafka Connect / Debezium image with few changes
+-   PostgreSQL JDBC driver placed into /kafka/libs directory
+-   The Confluent JDBC connector placed into /kafka/connect/kafka-connect-jdbc directory
+
+You can confirm these changes by logging into the Kafka connect docker container and checking libs/ and connect/ folders.
 
 The MySQL container already has an example database created for us. We can log into the container's database to check the database and tables inside it
 
@@ -133,7 +146,30 @@ If we check again the connectors registered with the Kafka Connect, we will find
 
 ```sh
 $ curl -H "Accept:application/json" localhost:8083/connectors/
+
 ["inventory-connector"]
+```
+
+Now we will register the PostgreSQL sink connector with the configurations defined in the "postgres-sink-config.json" file with the following command
+
+```sh
+$ curl -i -X POST -H "Accept:application/json" -H  "Content-Type:application/json" http://localhost:8083/connectors/ -d @postgres-sink-config.json
+
+HTTP/1.1 201 Created
+Date: Sun, 03 Jul 2022 15:27:29 GMT
+Location: http://localhost:8083/connectors/jdbc-sink
+Content-Type: application/json
+Content-Length: 521
+Server: Jetty(9.4.43.v20210629)
+
+{"name":"jdbc-sink","config":{"connector.class":"io.confluent.connect.jdbc.JdbcSinkConnector","tasks.max":"1","topics":"customers","connection.url":"jdbc:postgresql://postgres:5432/inventory?user=postgresuser&password=postgrespw","transforms":"unwrap","transforms.unwrap.type":"io.debezium.transforms.ExtractNewRecordState","transforms.unwrap.drop.tombstones":"false","auto.create":"true","insert.mode":"upsert","delete.enabled":"true","pk.fields":"id","pk.mode":"record_key","name":"jdbc-sink"},"tasks":[],"type":"sink"}
+```
+If you check the connectors list again, you will find two connectors registered with our Kafka Connect instance
+
+```sh
+$ curl -H "Accept:application/json" localhost:8083/connectors/ 
+
+["inventory-connector", "jdbc-sink"]
 ```
 
 We will use a CommandLine tool [kafkacat] for interacting with Kafka brokers. Before using kafkacat, you show know the network in which your containers are running. Docker compose command will vreate a default network for you where all the containers are running together. In my case the name of the default network is "debezium-cdc-mysql_default".
@@ -225,4 +261,3 @@ If we see the full event message in any [JSON beautifier], we can check the payl
    [PlOd]: <https://github.com/joemccann/dillinger/tree/master/plugins/onedrive/README.md>
    [PlMe]: <https://github.com/joemccann/dillinger/tree/master/plugins/medium/README.md>
    [PlGa]: <https://github.com/RahulHP/dillinger/blob/master/plugins/googleanalytics/README.md>
-
