@@ -229,22 +229,29 @@ mysql> SELECT * FROM customers;
 +------+------------+-----------+-----------------------+
 4 rows in set (0.00 sec)
 
-mysql> INSERT customers(first_name, last_name, email) VALUES("abc", "def", "abcdef@fake.com");
-Query OK, 1 row affected (0.02 sec)
 ```
 
-The new event with offset 4 will be visible in no time in our other terminal.
+Next we will look at our PostgreSQL database. Now remember that our PostgreSQL database did not have any database initially. We will log into our PostgreSQL container and check if the container has some data or not. The follwoing are the commands to execute our task. The username is "postgresuser" and the name of the database is "inventory". You can exit from the container using "\q" command.
 
 ```sh
-Key (168 bytes): {"schema":{"type":"struct","fields":[{"type":"int32","optional":false,"field":"id"}],"optional":false,"name":"dbserver1.inventory.customers.Key"},"payload":{"id":1005}}
-Value (2480 bytes): {"schema":{"type":"struct","fields":[{"type":"struct","fields":[{"type":"int32","optional":false,"field":"id"},{"type":"string","optional":false,"field":"first_name"},{"type":"string","optional":false,"field":"last_name"},{"type":"string","optional":false,"field":"email"}],"optional":true,"name":"dbserver1.inventory.customers.Value","field":"before"},{"type":"struct","fields":[{"type":"int32","optional":false,"field":"id"},{"type":"string","optional":false,"field":"first_name"},{"type":"string","optional":false,"field":"last_name"},{"type":"string","optional":false,"field":"email"}],"optional":true,"name":"dbserver1.inventory.customers.Value","field":"after"},{"type":"struct","fields":[{"type":"string","optional":false,"field":"version"},{"type":"string","optional":false,"field":"connector"},{"type":"string","optional":false,"field":"name"},{"type":"int64","optional":false,"field":"ts_ms"},{"type":"string","optional":true,"name":"io.debezium.data.Enum","version":1,"parameters":{"allowed":"true,last,false,incremental"},"default":"false","field":"snapshot"},{"type":"string","optional":false,"field":"db"},{"type":"string","optional":true,"field":"sequence"},{"type":"string","optional":true,"field":"table"},{"type":"int64","optional":false,"field":"server_id"},{"type":"string","optional":true,"field":"gtid"},{"type":"string","optional":false,"field":"file"},{"type":"int64","optional":false,"field":"pos"},{"type":"int32","optional":false,"field":"row"},{"type":"int64","optional":true,"field":"thread"},{"type":"string","optional":true,"field":"query"}],"optional":false,"name":"io.debezium.connector.mysql.Source","field":"source"},{"type":"string","optional":false,"field":"op"},{"type":"int64","optional":true,"field":"ts_ms"},{"type":"struct","fields":[{"type":"string","optional":false,"field":"id"},{"type":"int64","optional":false,"field":"total_order"},{"type":"int64","optional":false,"field":"data_collection_order"}],"optional":true,"field":"transaction"}],"optional":false,"name":"dbserver1.inventory.customers.Envelope"},"payload":{"before":null,"after":{"id":1005,"first_name":"abc","last_name":"def","email":"abcdef@fake.com"},"source":{"version":"1.9.4.Final","connector":"mysql","name":"dbserver1","ts_ms":1656829756000,"snapshot":"false","db":"inventory","sequence":null,"table":"customers","server_id":223344,"gtid":null,"file":"mysql-bin.000003","pos":392,"row":0,"thread":14,"query":null},"op":"c","ts_ms":1656829756750,"transaction":null}}
-Partition: 0    Offset: 4
---
-% Reached end of topic dbserver1.inventory.customers [0] at offset 5
+$ docker exec -it 6c37ba47fdc3 bash
+root@6c37ba47fdc3:/# psql -U postgresuser inventory
+psql (9.6.24)
+Type "help" for help.
+
+inventory=# SELECT * FROM customers;
+ last_name |  id  | first_name |         email
+-----------+------+------------+-----------------------
+ Thomas    | 1001 | Sally      | sally.thomas@acme.com
+ Bailey    | 1002 | George     | gbailey@foobar.com
+ Walker    | 1003 | Edward     | ed@walker.com
+ Kretchmar | 1004 | Anne       | annek@noanswer.org
+(4 rows)
+
+inventory=#
 ```
 
-If we see the full event message in any [JSON beautifier], we can check the payload section in which we can see the "before" field as "null" and "after" field containign the details of our insert operation. 
-
+Here we can see that the "customers" table from MySQL example database has been successfully replicated to PostgreSQL with very few configurations and very low code. Similarly you can configure the supported database connector by Debezium with the Kafka Connect and stream data changes from the source database to the sink database with appropriate connectors and SMTs. 
 
 
 
