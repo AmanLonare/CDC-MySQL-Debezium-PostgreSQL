@@ -210,7 +210,7 @@ Partition: 0    Offset: 3
 --
 ```
 
-As you can see, the current offset is 3 with 4 messages. In the new terminal we can log into the MySQL container as we did before and make any changes to the "customers" table. New event can be seen instantly in the terminal where we ran kafkacat for tailing "customers" table
+As you can see, the current offset is 3 with 4 messages. In the new terminal we can log into the MySQL container as we did before and make any changes to the "customers" table. New event can be seen instantly in the terminal where we ran kafkacat for tailing "customers" table. You can check the following [repository] if you want to see how the change events are emitted whenever there is any 'INSERT', 'UPDATE', or 'DELETE'.
 
 ```sh
 mysql> use inventory;
@@ -261,6 +261,7 @@ Here we can see that the "customers" table from MySQL example database has been 
    
    [Debezium]: <https://debezium.io/> 
    [kafkacat]: <https://hub.docker.com/r/confluentinc/cp-kafkacat>
+   [repository]: <https://github.com/AmanLonare/Debezium-CDC-MySQL>
    [JSON beautifier]: <https://codebeautify.org/jsonviewer>
    [PlDb]: <https://github.com/joemccann/dillinger/tree/master/plugins/dropbox/README.md>
    [PlGh]: <https://github.com/joemccann/dillinger/tree/master/plugins/github/README.md>
