@@ -130,16 +130,16 @@ $ curl -H "Accept:application/json" localhost:8083/connectors/
 Next step is to register the Debezium MySQL connector with the Kafka Connect. The following command uses the Kafka Connect service’s API to submit a POST request against the /connectors resource with a JSON document that describes the new connector (called inventory-connector).
 
 ```sh
-$ curl -i -X POST -H "Accept:application/json" -H "Content-Type:application/json" localhost:8083/connectors/ --data "@debezium-mysql-source-connector.json" 
+$ curl -i -X POST -H "Accept:application/json" -H "Content-Type:application/json" localhost:8083/connectors/ --data "@mysql-source-config.json" 
 
 HTTP/1.1 201 Created
-Date: Sun, 03 Jul 2022 02:59:30 GMT
+Date: Wed, 13 Jul 2022 00:32:07 GMT
 Location: http://localhost:8083/connectors/inventory-connector
 Content-Type: application/json
-Content-Length: 495
-Server: Jetty(9.4.43.v20210629)
+Content-Length: 681
+Server: Jetty(9.4.44.v20210927)
 
-{"name":"inventory-connector","config":{"connector.class":"io.debezium.connector.mysql.MySqlConnector","tasks.max":"1","database.hostname":"mysql","database.port":"3306","database.user":"debezium","database.password":"dbz","database.server.id":"184054","database.server.name":"dbserver1","database.include.list":"inventory","database.history.kafka.bootstrap.servers":"kafka:9092","database.history.kafka.topic":"schema-changes.inventory","name":"inventory-connector"},"tasks":[],"type":"source"}
+{"name":"inventory-connector","config":{"connector.class":"io.debezium.connector.mysql.MySqlConnector","tasks.max":"1","database.hostname":"mysql","database.port":"3306","database.user":"debezium","database.password":"dbz","database.server.id":"184054","database.server.name":"dbserver1","database.include.list":"inventory","database.history.kafka.bootstrap.servers":"kafka:9092","database.history.kafka.topic":"schema-changes.inventory","transforms":"route","transforms.route.type":"org.apache.kafka.connect.transforms.RegexRouter","transforms.route.regex":"([^.]+)\\.([^.]+)\\.([^.]+)","transforms.route.replacement":"$3","name":"inventory-connector"},"tasks":[],"type":"source"}
 ```
 
 If we check again the connectors registered with the Kafka Connect, we will find "inventory-connector" in the list of connectors
